@@ -18,11 +18,13 @@ namespace hiredis {
 
         ~RedisConnection();
 
-        int Init();
+        bool Init();
 
         const char *GetPoolName();
 
         bool checkStatus();
+
+		bool isInitFlags();
 
         bool connect();
 //        string get(string key);
@@ -66,6 +68,7 @@ namespace hiredis {
 
         int _cur_conn_cnt;
         int _max_conn_cnt;
+		bool _initFlags;
         // list<CacheConn*>	m_free_list;
         //  CThreadNotify		m_free_notify;
     };

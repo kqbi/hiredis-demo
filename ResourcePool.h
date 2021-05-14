@@ -111,7 +111,7 @@ private:
     List<C*> _objs;
     function<C*(void)> _allotter;
     mutex _mutex;
-    int _poolsize = 8;
+    int _poolsize = 0;
 };
 
 /**

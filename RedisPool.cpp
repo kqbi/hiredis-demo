@@ -14,57 +14,83 @@
 #endif
 namespace hiredis {
     RedisConnection::RedisConnection(const char *pool_name, const char *server_ip, int server_port, int db_num)
-            : _pool_name(pool_name), _server_ip(server_ip), _server_port(server_port), _db_num(db_num) {
-        // 200ms超时
-        struct timeval timeout = {0, 200000};
-        _pContext = redisConnectWithTimeout(_server_ip.c_str(), _server_port, timeout);
-        if (!_pContext || _pContext->err) {
-            if (_pContext) {
-                redisFree(_pContext);
-                _pContext = NULL;
-            }
-            throw std::exception("redisConnect failed");
-        }
-
-        redisReply *reply = (redisReply *) redisCommand(_pContext, "SELECT %d", _db_num);
-        if (reply && (reply->type == REDIS_REPLY_STATUS) && (strncmp(reply->str, "OK", 2) == 0)) {
-            freeReplyObject(reply);
-        } else {
-            throw std::exception("select cache db %d failed", _db_num);
-        }
+            : _pool_name(pool_name), _server_ip(server_ip), _server_port(server_port), _db_num(db_num), _initFlags(false){
+       
     }
 
     RedisConnection::~RedisConnection() {
 
     }
 
+	bool RedisConnection::Init() {
+	
+		// 200ms超时
+		struct timeval timeout = { 0, 200000 };
+		_pContext = redisConnectWithTimeout(_server_ip.c_str(), _server_port, timeout);
+		if (!_pContext || _pContext->err) {
+			if (_pContext) {
+				redisFree(_pContext);
+				_pContext = NULL;
+			}
+			return false;
+		}
+
+		redisReply *reply = (redisReply *)redisCommand(_pContext, "SELECT %d", _db_num);
+		if (reply && (reply->type == REDIS_REPLY_STATUS) && (strncmp(reply->str, "OK", 2) == 0)) {
+			freeReplyObject(reply);
+		}
+		else {
+			if (_pContext) {
+				redisFree(_pContext);
+				_pContext = NULL;
+			}
+			return false;
+		}
+		_initFlags = true;
+		return true;
+	}
+
     const char *RedisConnection::GetPoolName() {
         return _pool_name.c_str();
     }
 
+	bool RedisConnection::isInitFlags() {
+		return _initFlags;
+	}
+
     bool RedisConnection::checkStatus() {
         bool ret = true;
-        do {
-            redisReply *reply = (redisReply *) redisCommand(_pContext, "ping");
-            if (reply == NULL) {
-                ret = false;
-            }
+		if (!isInitFlags()) {
+			Init();
+		}
 
-            std::shared_ptr<redisReply> autoFree(reply, freeReplyObject);
+		if (!_pContext) {
+			ret = connect();
+		} else {
+			do {
+				redisReply *reply = (redisReply *)redisCommand(_pContext, "ping");
+				if (reply == NULL) {
+					ret = false;
+					break;
+				}
 
-            if (reply->type != REDIS_REPLY_STATUS) {
-                ret = false;
-                break;
-            };
-            if (strcmp(reply->str, "PONG") != 0) {
-                ret = false;
-                break;
-            }
-        } while (0);
+				std::shared_ptr<redisReply> autoFree(reply, freeReplyObject);
 
+				if (reply->type != REDIS_REPLY_STATUS) {
+					ret = false;
+					break;
+				};
+				if (strcmp(reply->str, "PONG") != 0) {
+					ret = false;
+					break;
+				}
+			} while (0);
+		}
         if (!ret) {
-            if (_pContext)
-                redisFree(_pContext);
+			if (_pContext) {
+				redisFree(_pContext);
+				_pContext = 0;
+			}
             ret = connect();
         }
 

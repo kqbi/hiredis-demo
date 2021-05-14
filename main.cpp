@@ -44,6 +44,9 @@ int main() {
         std::cerr << "Couldn't install signal handler for SIGTERM" << std::endl;
         exit(-1);
     }
+
+	Sleep(10 * 1000);
+
     if (running) {
         while (!finished) {
 #ifdef WIN32
@@ -51,6 +54,23 @@ int main() {
 #else
             usleep(1000*5);
 #endif
+			RedisPool::Instance().GetCacheConn()->Set("123", std::string("456"));
+			std::thread t1([]() {
+				RedisPool::Instance().GetCacheConn()->Set("123", std::string("456"));
+			});
+			std::thread t2([]() {
+				RedisPool::Instance().GetCacheConn()->Set("123", std::string("456"));
+			});
+			std::thread t3([]() {
+				RedisPool::Instance().GetCacheConn()->Set("123", std::string("456"));
+			});
+			std::thread t4([]() {
+				RedisPool::Instance().GetCacheConn()->Set("123", std::string("456"));
+			});
+			t1.join();
+			t2.join();
+			t3.join();
+			t4.join();
         }
     }
     return 0;
