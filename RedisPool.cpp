@@ -19,7 +19,10 @@ namespace hiredis {
     }
 
     RedisConnection::~RedisConnection() {
-
+		if (_pContext) {
+			redisFree(_pContext);
+			_pContext = NULL;
+		}
     }
 
 	bool RedisConnection::Init() {
