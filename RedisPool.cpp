@@ -28,10 +28,11 @@ namespace hiredis {
 	bool RedisConnection::Init() {
 	
 		// 200ms超时
-		struct timeval timeout = { 0, 200000 };
+		struct timeval timeout = { 0, 1000000 };
 		_pContext = redisConnectWithTimeout(_server_ip.c_str(), _server_port, timeout);
 		if (!_pContext || _pContext->err) {
 			if (_pContext) {
+				printf("error: %s\n", _pContext->errstr);
 				redisFree(_pContext);
 				_pContext = NULL;
 			}
@@ -111,7 +112,7 @@ namespace hiredis {
         _last_connect_time = cur_time;
 
         // 200ms超时
-        struct timeval timeout = {0, 200000};
+        struct timeval timeout = {0, 1000000};
         _pContext = redisConnectWithTimeout(_server_ip.c_str(), _server_port, timeout);
         if (!_pContext || _pContext->err) {
             if (_pContext) {

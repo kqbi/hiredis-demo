@@ -32,7 +32,7 @@ int main() {
     //       running = false;
     //  }
 
-    RedisPool::Instance().Init("test", "192.168.1.61", 6379, 0);
+    RedisPool::Instance().Init("test", "127.0.0.1", 6379, 0);
     RedisPool::Instance().GetCacheConn()->Set("123", std::string("456"));
     printf("aaaaaaaaaaaaaaaaaaaaa\n");
     if (signal(SIGINT, signalHandler) == SIG_ERR) {
